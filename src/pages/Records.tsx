@@ -187,8 +187,10 @@ export default function Records() {
                     </button>
                     <button
                       onClick={() => {
-                        useInspectionStore.getState().reinspect(record.id)
-                        navigate(`/inspect/reinspect`)
+                        const newRecordId = useInspectionStore.getState().reinspect(record.id)
+                        if (newRecordId) {
+                          navigate(`/inspect/${record.taskId}`)
+                        }
                       }}
                       className="flex-1 py-2 bg-orange-500/15 rounded-lg text-xs text-orange-400 flex items-center justify-center gap-1 active:scale-95 transition-transform border border-orange-500/20"
                     >

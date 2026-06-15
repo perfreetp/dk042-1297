@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 import { Home, ScanLine, ClipboardList } from 'lucide-react'
 import HomePage from '@/pages/Home'
@@ -7,6 +8,7 @@ import PhotoCapture from '@/pages/PhotoCapture'
 import Judge from '@/pages/Judge'
 import Summary from '@/pages/Summary'
 import Records from '@/pages/Records'
+import { useAppStore } from '@/stores/appStore'
 
 function BottomNav() {
   const location = useLocation()
@@ -23,14 +25,12 @@ function BottomNav() {
     return location.pathname.startsWith(path)
   }
 
-  const showNav = ['/', '/scan', '/records'].some(
-    (p) => location.pathname === p
-  )
+  const showNav = ['/', '/scan', '/records'].some((p) => location.pathname === p)
 
   if (!showNav) return null
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-[#0F172A]/95 backdrop-blur-md border-t border-slate-700/50 px-2 pb-[env(safe-area-inset-bottom)]">
+    <nav className="fixed bottom-0 left-0 right-0 bg-[#0F172A]/95 backdrop-blur-md border-t border-slate-700/50 px-2 pb-[env(safe-area-inset-bottom)] z-50">
       <div className="flex items-center justify-around py-2">
         {tabs.map((tab) => {
           const active = isActive(tab.path)
@@ -58,6 +58,25 @@ function BottomNav() {
   )
 }
 
+function NetworkListener() {
+  const { setOnline } = useAppStore()
+
+  useEffect(() => {
+    const handleOnline = () => setOnline(true)
+    const handleOffline = () => setOnline(false)
+
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [setOnline])
+
+  return null
+}
+
 function AppRoutes() {
   return (
     <>
@@ -67,7 +86,6 @@ function AppRoutes() {
         <Route path="/inspect/:id" element={<Inspect />} />
         <Route path="/inspect/:id/photo" element={<PhotoCapture />} />
         <Route path="/inspect/:id/judge" element={<Judge />} />
-        <Route path="/inspect/:id/summary" element={<Summary />} />
         <Route path="/records" element={<Records />} />
         <Route path="/records/:id" element={<Summary />} />
       </Routes>
@@ -79,6 +97,7 @@ function AppRoutes() {
 export default function App() {
   return (
     <Router>
+      <NetworkListener />
       <AppRoutes />
     </Router>
   )

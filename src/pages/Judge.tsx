@@ -64,11 +64,13 @@ export default function Judge() {
 
   const handleComplete = () => {
     updateRecommendation(recommendation)
-    completeInspection()
+    const recordId = completeInspection()
     if (id) {
       useTaskStore.getState().updateTaskStatus(id, 'completed')
     }
-    navigate(`/inspect/${id}/summary`, { state: { fromJudge: true } })
+    if (recordId) {
+      navigate(`/records/${recordId}`, { state: { fromJudge: true } })
+    }
   }
 
   const recConfig = {

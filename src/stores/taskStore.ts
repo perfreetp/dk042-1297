@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import { InspectionTask } from '@/types'
 import { MOCK_TASKS } from '@/data/mock'
 
@@ -11,23 +12,30 @@ interface TaskState {
   getUrgentCount: () => number
 }
 
-export const useTaskStore = create<TaskState>((set, get) => ({
-  tasks: MOCK_TASKS,
+export const useTaskStore = create<TaskState>()(
+  persist(
+    (set, get) => ({
+      tasks: MOCK_TASKS,
 
-  updateTaskStatus: (taskId, status) =>
-    set((state) => ({
-      tasks: state.tasks.map((t) => (t.id === taskId ? { ...t, status } : t)),
-    })),
+      updateTaskStatus: (taskId, status) =>
+        set((state) => ({
+          tasks: state.tasks.map((t) => (t.id === taskId ? { ...t, status } : t)),
+        })),
 
-  getTodayTasks: () => {
-    const today = new Date().toISOString().split('T')[0]
-    return get().tasks.filter((t) => t.dueDate === today)
-  },
+      getTodayTasks: () => {
+        const today = new Date().toISOString().split('T')[0]
+        return get().tasks.filter((t) => t.dueDate === today)
+      },
 
-  getCompletedCount: () => get().tasks.filter((t) => t.status === 'completed').length,
+      getCompletedCount: () => get().tasks.filter((t) => t.status === 'completed').length,
 
-  getPendingCount: () => get().tasks.filter((t) => t.status === 'pending').length,
+      getPendingCount: () => get().tasks.filter((t) => t.status === 'pending').length,
 
-  getUrgentCount: () =>
-    get().tasks.filter((t) => t.status === 'pending' && t.priority === 'urgent').length,
-}))
+      getUrgentCount: () =>
+        get().tasks.filter((t) => t.status === 'pending' && t.priority === 'urgent').length,
+    }),
+    {
+      name: 'task-store',
+    }
+  )
+)
