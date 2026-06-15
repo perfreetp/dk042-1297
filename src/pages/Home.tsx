@@ -59,10 +59,14 @@ export default function Home() {
       </header>
 
       {offlineCount > 0 && (
-        <div className="mx-5 mb-4 px-4 py-2.5 bg-amber-500/15 border border-amber-500/30 rounded-xl flex items-center gap-2">
+        <button
+          onClick={() => navigate('/records')}
+          className="mx-5 mb-4 px-4 py-2.5 bg-amber-500/15 border border-amber-500/30 rounded-xl flex items-center gap-2 w-[calc(100%-2.5rem)] text-left active:scale-[0.98] transition-transform"
+        >
           <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-          <span className="text-xs text-amber-300">{offlineCount} 条离线记录待补传</span>
-        </div>
+          <span className="text-xs text-amber-300">{offlineCount} 条记录待补传</span>
+          <ChevronRight className="w-3.5 h-3.5 text-amber-400/60 ml-auto" />
+        </button>
       )}
 
       <section className="mx-5 mb-6">

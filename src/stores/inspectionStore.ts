@@ -5,6 +5,7 @@ import {
   CheckItem,
   InspectionPhoto,
   PhotoAnnotation,
+  SyncStatus,
   DEFAULT_GUN_HEAD_CHECKS,
   DEFAULT_CABLE_JOINT_CHECKS,
 } from '@/types'
@@ -21,6 +22,7 @@ interface InspectionState {
   updatePhotos: (photos: InspectionPhoto[]) => void
   addPhoto: (photo: InspectionPhoto) => void
   removePhoto: (photoId: string) => void
+  updatePhotoRemark: (photoId: string, remark: string) => void
   addAnnotation: (photoId: string, annotation: PhotoAnnotation) => void
   updateSuspectedCauses: (causes: string[]) => void
   updateRecommendation: (value: InspectionRecord['recommendation']) => void
@@ -31,8 +33,16 @@ interface InspectionState {
   getRecordsByGunPosition: (gunPositionId: string) => InspectionRecord[]
   hasAbnormality: () => boolean
   reinspect: (recordId: string) => string | null
-  syncOfflineRecords: () => void
+  syncRecord: (recordId: string) => void
+  syncAllOffline: () => void
   getOfflineRecords: () => InspectionRecord[]
+  getRecordsBySyncStatus: (status: SyncStatus) => InspectionRecord[]
+  getGroupedByGunPosition: () => Record<string, InspectionRecord[]>
+}
+
+const getInitialSyncStatus = (): SyncStatus => {
+  if (navigator.onLine) return 'synced'
+  return 'pending'
 }
 
 export const useInspectionStore = create<InspectionState>()(
@@ -42,6 +52,7 @@ export const useInspectionStore = create<InspectionState>()(
       records: MOCK_RECORDS,
 
       initRecord: (taskId, gunPosition) => {
+        const isOnline = navigator.onLine
         const record: InspectionRecord = {
           id: `rec-${Date.now()}`,
           taskId,
@@ -57,8 +68,9 @@ export const useInspectionStore = create<InspectionState>()(
           recommendation: null,
           notifiedDuty: false,
           createdAt: new Date().toISOString(),
-          isOffline: !navigator.onLine,
-          syncedAt: null,
+          isOffline: !isOnline,
+          syncStatus: isOnline ? 'synced' : 'pending',
+          syncedAt: isOnline ? new Date().toISOString() : null,
         }
         set({ currentRecord: record })
       },
@@ -100,12 +112,22 @@ export const useInspectionStore = create<InspectionState>()(
       removePhoto: (photoId) =>
         set((state) => ({
           currentRecord: state.currentRecord
-            ? {
-                ...state.currentRecord,
-                photos: state.currentRecord.photos.filter((p) => p.id !== photoId),
-              }
+            ? { ...state.currentRecord, photos: state.currentRecord.photos.filter((p) => p.id !== photoId) }
             : null,
         })),
+
+      updatePhotoRemark: (photoId, remark) =>
+        set((state) => {
+          if (!state.currentRecord) return state
+          return {
+            currentRecord: {
+              ...state.currentRecord,
+              photos: state.currentRecord.photos.map((p) =>
+                p.id === photoId ? { ...p, remark } : p
+              ),
+            },
+          }
+        }),
 
       addAnnotation: (photoId, annotation) =>
         set((state) => {
@@ -138,10 +160,12 @@ export const useInspectionStore = create<InspectionState>()(
       completeInspection: () => {
         const { currentRecord, records } = get()
         if (!currentRecord) return null
+        const isOnline = navigator.onLine
         const completedRecord: InspectionRecord = {
           ...currentRecord,
-          isOffline: !navigator.onLine,
-          syncedAt: navigator.onLine ? new Date().toISOString() : null,
+          isOffline: !isOnline,
+          syncStatus: isOnline ? 'synced' : 'pending',
+          syncedAt: isOnline ? new Date().toISOString() : null,
         }
         set({
           currentRecord: null,
@@ -190,20 +214,59 @@ export const useInspectionStore = create<InspectionState>()(
           notifiedDuty: false,
           createdAt: new Date().toISOString(),
           isOffline: !navigator.onLine,
-          syncedAt: null,
+          syncStatus: navigator.onLine ? 'synced' : 'pending',
+          syncedAt: navigator.onLine ? new Date().toISOString() : null,
         }
         set({ currentRecord: newRecord })
         return newRecord.id
       },
 
-      syncOfflineRecords: () =>
+      syncRecord: (recordId) => {
+        const isOnline = navigator.onLine
+        if (!isOnline) return
         set((state) => ({
           records: state.records.map((r) =>
-            r.isOffline ? { ...r, isOffline: false, syncedAt: new Date().toISOString() } : r
+            r.id === recordId ? { ...r, syncStatus: 'syncing' as SyncStatus } : r
           ),
-        })),
+        }))
+        setTimeout(() => {
+          const success = Math.random() > 0.1
+          set((state) => ({
+            records: state.records.map((r) =>
+              r.id === recordId
+                ? {
+                    ...r,
+                    syncStatus: success ? ('synced' as SyncStatus) : ('failed' as SyncStatus),
+                    isOffline: !success,
+                    syncedAt: success ? new Date().toISOString() : null,
+                  }
+                : r
+            ),
+          }))
+        }, 1500)
+      },
 
-      getOfflineRecords: () => get().records.filter((r) => r.isOffline),
+      syncAllOffline: () => {
+        const isOnline = navigator.onLine
+        if (!isOnline) return
+        const offlineRecords = get().records.filter((r) => r.syncStatus === 'pending' || r.syncStatus === 'failed')
+        offlineRecords.forEach((r) => {
+          get().syncRecord(r.id)
+        })
+      },
+
+      getOfflineRecords: () =>
+        get().records.filter((r) => r.syncStatus === 'pending' || r.syncStatus === 'failed' || r.syncStatus === 'syncing'),
+
+      getRecordsBySyncStatus: (status) => get().records.filter((r) => r.syncStatus === status),
+
+      getGroupedByGunPosition: () =>
+        get().records.reduce<Record<string, InspectionRecord[]>>((acc, record) => {
+          const key = record.gunPosition.id
+          if (!acc[key]) acc[key] = []
+          acc[key].push(record)
+          return acc
+        }, {}),
     }),
     {
       name: 'inspection-store',

@@ -8,6 +8,7 @@ import PhotoCapture from '@/pages/PhotoCapture'
 import Judge from '@/pages/Judge'
 import Summary from '@/pages/Summary'
 import Records from '@/pages/Records'
+import ReportPreview from '@/pages/ReportPreview'
 import { useAppStore } from '@/stores/appStore'
 
 function BottomNav() {
@@ -88,6 +89,7 @@ function AppRoutes() {
         <Route path="/inspect/:id/judge" element={<Judge />} />
         <Route path="/records" element={<Records />} />
         <Route path="/records/:id" element={<Summary />} />
+        <Route path="/report/:id" element={<ReportPreview />} />
       </Routes>
       <BottomNav />
     </>

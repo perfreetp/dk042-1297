@@ -28,10 +28,20 @@ export interface PhotoAnnotation {
   content?: string
 }
 
+export type SyncStatus = 'pending' | 'syncing' | 'synced' | 'failed'
+
+export const SYNC_STATUS_LABELS: Record<SyncStatus, string> = {
+  pending: '待补传',
+  syncing: '补传中',
+  synced: '已同步',
+  failed: '补传失败',
+}
+
 export interface InspectionPhoto {
   id: string
   url: string
   annotations: PhotoAnnotation[]
+  remark: string
   timestamp: string
 }
 
@@ -51,6 +61,7 @@ export interface InspectionRecord {
   notifiedDuty: boolean
   createdAt: string
   isOffline: boolean
+  syncStatus: SyncStatus
   syncedAt: string | null
 }
 

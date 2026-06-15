@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useInspectionStore } from '@/stores/inspectionStore'
 import { PhotoAnnotation, InspectionPhoto } from '@/types'
-import { ArrowLeft, Camera, Trash2, Circle, MoveUpRight, Type } from 'lucide-react'
+import { ArrowLeft, Camera, Trash2, Circle, MoveUpRight, Type, MessageSquare } from 'lucide-react'
 
 type AnnotationTool = 'circle' | 'arrow' | 'text' | null
 
@@ -11,20 +11,11 @@ function AnnotationOverlay({ annotation, onRemove }: { annotation: PhotoAnnotati
     return (
       <div
         className="absolute cursor-pointer group"
-        style={{
-          left: `${annotation.x * 100}%`,
-          top: `${annotation.y * 100}%`,
-          transform: 'translate(-50%, -50%)',
-        }}
-        onClick={(e) => {
-          e.stopPropagation()
-          onRemove()
-        }}
+        style={{ left: `${annotation.x * 100}%`, top: `${annotation.y * 100}%`, transform: 'translate(-50%, -50%)' }}
+        onClick={(e) => { e.stopPropagation(); onRemove() }}
       >
         <div className="w-10 h-10 rounded-full border-2 border-orange-400 animate-pulse shadow-[0_0_10px_rgba(255,107,53,0.6)] group-hover:border-red-400" />
-        <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap">
-          点击删除
-        </div>
+        <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap">删除</div>
       </div>
     )
   }
@@ -32,20 +23,11 @@ function AnnotationOverlay({ annotation, onRemove }: { annotation: PhotoAnnotati
     return (
       <div
         className="absolute cursor-pointer group"
-        style={{
-          left: `${annotation.x * 100}%`,
-          top: `${annotation.y * 100}%`,
-          transform: 'translate(-50%, -50%)',
-        }}
-        onClick={(e) => {
-          e.stopPropagation()
-          onRemove()
-        }}
+        style={{ left: `${annotation.x * 100}%`, top: `${annotation.y * 100}%`, transform: 'translate(-50%, -50%)' }}
+        onClick={(e) => { e.stopPropagation(); onRemove() }}
       >
         <MoveUpRight className="w-7 h-7 text-orange-400 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] group-hover:text-red-400" />
-        <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap">
-          点击删除
-        </div>
+        <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap">删除</div>
       </div>
     )
   }
@@ -53,22 +35,11 @@ function AnnotationOverlay({ annotation, onRemove }: { annotation: PhotoAnnotati
     return (
       <div
         className="absolute cursor-pointer group"
-        style={{
-          left: `${annotation.x * 100}%`,
-          top: `${annotation.y * 100}%`,
-          transform: 'translate(-50%, -50%)',
-        }}
-        onClick={(e) => {
-          e.stopPropagation()
-          onRemove()
-        }}
+        style={{ left: `${annotation.x * 100}%`, top: `${annotation.y * 100}%`, transform: 'translate(-50%, -50%)' }}
+        onClick={(e) => { e.stopPropagation(); onRemove() }}
       >
-        <div className="px-2 py-1 bg-orange-500 text-white text-xs rounded font-bold whitespace-nowrap shadow-lg group-hover:bg-red-500">
-          {annotation.content}
-        </div>
-        <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap">
-          点击删除
-        </div>
+        <div className="px-2 py-1 bg-orange-500 text-white text-xs rounded font-bold whitespace-nowrap shadow-lg group-hover:bg-red-500">{annotation.content}</div>
+        <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap">删除</div>
       </div>
     )
   }
@@ -78,18 +49,16 @@ function AnnotationOverlay({ annotation, onRemove }: { annotation: PhotoAnnotati
 export default function PhotoCapture() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { currentRecord, addPhoto, removePhoto, addAnnotation } = useInspectionStore()
+  const { currentRecord, addPhoto, removePhoto, addAnnotation, updatePhotoRemark } = useInspectionStore()
   const [activeTool, setActiveTool] = useState<AnnotationTool>(null)
-  const [activePhotoId, setActivePhotoId] = useState<string | null>(null)
-  const imgRefs = useRef<Record<string, HTMLImageElement | null>>({})
+  const [editingRemarkId, setEditingRemarkId] = useState<string | null>(null)
+  const [remarkText, setRemarkText] = useState('')
 
   if (!currentRecord) {
     return (
       <div className="min-h-screen bg-[#0F172A] text-white flex flex-col items-center justify-center px-5">
         <p className="text-slate-400 mb-4">无巡检记录</p>
-        <button onClick={() => navigate('/')} className="px-5 py-2 bg-orange-500 rounded-lg text-sm">
-          返回首页
-        </button>
+        <button onClick={() => navigate('/')} className="px-5 py-2 bg-orange-500 rounded-lg text-sm">返回首页</button>
       </div>
     )
   }
@@ -99,10 +68,10 @@ export default function PhotoCapture() {
       id: `photo-${Date.now()}`,
       url: `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=industrial%20electrical%20cable%20connection%20close%20up%2C%20copper%20connector%20with%20heat%20discoloration%2C%20factory%20environment%2C%20realistic%20photograph&image_size=landscape_4_3`,
       annotations: [],
+      remark: '',
       timestamp: new Date().toISOString(),
     }
     addPhoto(newPhoto)
-    setActivePhotoId(newPhoto.id)
   }
 
   const handleImageClick = (e: React.MouseEvent<HTMLImageElement>, photo: InspectionPhoto) => {
@@ -111,7 +80,6 @@ export default function PhotoCapture() {
     const rect = img.getBoundingClientRect()
     const x = (e.clientX - rect.left) / rect.width
     const y = (e.clientY - rect.top) / rect.height
-
     if (activeTool === 'text') {
       const text = prompt('请输入标注文字：')
       if (!text) return
@@ -131,16 +99,22 @@ export default function PhotoCapture() {
     useInspectionStore.getState().updatePhotos(updatedPhotos)
   }
 
-  const activePhoto = currentRecord.photos.find((p) => p.id === activePhotoId)
+  const startEditRemark = (photoId: string, currentRemark: string) => {
+    setEditingRemarkId(photoId)
+    setRemarkText(currentRemark)
+  }
+
+  const saveRemark = (photoId: string) => {
+    updatePhotoRemark(photoId, remarkText)
+    setEditingRemarkId(null)
+    setRemarkText('')
+  }
 
   return (
     <div className="min-h-screen bg-[#0F172A] text-white">
       <header className="px-4 pt-5 pb-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate(`/inspect/${id}`)}
-            className="p-2 -ml-2 active:scale-90 transition-transform"
-          >
+          <button onClick={() => navigate(`/inspect/${id}`)} className="p-2 -ml-2 active:scale-90 transition-transform">
             <ArrowLeft className="w-5 h-5 text-slate-300" />
           </button>
           <h1 className="text-lg font-semibold">异常拍照</h1>
@@ -150,9 +124,7 @@ export default function PhotoCapture() {
 
       <div className="px-5">
         <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3.5 mb-4">
-          <p className="text-xs text-amber-300">
-            检测到异常项，请拍照记录发热点位置。选择标注工具后，点击照片对应位置添加标记。
-          </p>
+          <p className="text-xs text-amber-300">选择标注工具后点击照片添加标记，可给每张照片添加备注说明。</p>
         </div>
 
         {currentRecord.photos.length > 0 && (
@@ -169,56 +141,68 @@ export default function PhotoCapture() {
                     key={tool.key}
                     onClick={() => setActiveTool(activeTool === tool.key ? null : tool.key)}
                     className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
-                      activeTool === tool.key
-                        ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
-                        : 'bg-slate-800 text-slate-400 border border-slate-700/50'
+                      activeTool === tool.key ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' : 'bg-slate-800 text-slate-400 border border-slate-700/50'
                     }`}
                   >
-                    {tool.icon}
-                    {tool.label}
+                    {tool.icon}{tool.label}
                   </button>
                 ))}
               </div>
-              {activeTool && (
-                <p className="text-xs text-orange-400/80 mt-2">
-                  已选「{activeTool === 'circle' ? '圆圈' : activeTool === 'arrow' ? '箭头' : '文字'}」工具，点击照片位置添加标注
-                </p>
-              )}
+              {activeTool && <p className="text-xs text-orange-400/80 mt-2">已选「{activeTool === 'circle' ? '圆圈' : activeTool === 'arrow' ? '箭头' : '文字'}」工具，点击照片位置添加标注</p>}
             </div>
 
-            <div className="space-y-3 mb-5">
+            <div className="space-y-4 mb-5">
               {currentRecord.photos.map((photo, i) => (
-                <div
-                  key={photo.id}
-                  className={`relative rounded-xl overflow-hidden border-2 transition-all ${
-                    activePhotoId === photo.id ? 'border-orange-500' : 'border-slate-700/50'
-                  }`}
-                >
-                  <img
-                    ref={(el) => {
-                      imgRefs.current[photo.id] = el
-                    }}
-                    src={photo.url}
-                    alt={`异常照片 ${i + 1}`}
-                    className={`w-full h-52 object-cover ${activeTool ? 'cursor-crosshair' : ''}`}
-                    onClick={(e) => handleImageClick(e, photo)}
-                  />
-                  {photo.annotations.map((ann, j) => (
-                    <AnnotationOverlay
-                      key={j}
-                      annotation={ann}
-                      onRemove={() => handleRemoveAnnotation(photo.id, j)}
+                <div key={photo.id} className="bg-slate-800/40 border border-slate-700/50 rounded-xl overflow-hidden">
+                  <div className="relative">
+                    <img
+                      src={photo.url}
+                      alt={`异常照片 ${i + 1}`}
+                      className={`w-full h-52 object-cover ${activeTool ? 'cursor-crosshair' : ''}`}
+                      onClick={(e) => handleImageClick(e, photo)}
                     />
-                  ))}
-                  <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded-md text-xs">
-                    #{i + 1} · {photo.annotations.length}标注
+                    {photo.annotations.map((ann, j) => (
+                      <AnnotationOverlay key={j} annotation={ann} onRemove={() => handleRemoveAnnotation(photo.id, j)} />
+                    ))}
+                    <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded-md text-xs">
+                      #{i + 1} · {photo.annotations.length}标注
+                    </div>
+                    <button
+                      onClick={() => removePhoto(photo.id)}
+                      className="absolute top-2 right-2 w-7 h-7 bg-red-500/80 backdrop-blur-sm rounded-full flex items-center justify-center active:scale-90 transition-transform"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => removePhoto(photo.id)}
-                    className="absolute top-2 right-2 w-7 h-7 bg-red-500/80 backdrop-blur-sm rounded-full flex items-center justify-center active:scale-90 transition-transform"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="p-3">
+                    {editingRemarkId === photo.id ? (
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={remarkText}
+                          onChange={(e) => setRemarkText(e.target.value)}
+                          placeholder="添加备注说明..."
+                          className="flex-1 bg-slate-900/80 border border-slate-600/50 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-orange-500/50"
+                          autoFocus
+                          onKeyDown={(e) => { if (e.key === 'Enter') saveRemark(photo.id) }}
+                        />
+                        <button onClick={() => saveRemark(photo.id)} className="px-3 py-1.5 bg-orange-500/20 text-orange-400 rounded-lg text-xs font-medium active:scale-95 transition-transform">保存</button>
+                        <button onClick={() => setEditingRemarkId(null)} className="px-2 py-1.5 bg-slate-700 text-slate-400 rounded-lg text-xs active:scale-95 transition-transform">取消</button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => startEditRemark(photo.id, photo.remark)}
+                        className="w-full flex items-center gap-2 text-left"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                        {photo.remark ? (
+                          <span className="text-xs text-slate-300">{photo.remark}</span>
+                        ) : (
+                          <span className="text-xs text-slate-500">点击添加备注...</span>
+                        )}
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
